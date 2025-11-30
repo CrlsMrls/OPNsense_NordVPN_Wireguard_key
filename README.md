@@ -1,4 +1,4 @@
-# Configuration Guide: OPNsense + NordVPN (WireGuard)
+# OPNsense + NordVPN (WireGuard)
 
 This document provides a comprehensive guide on configuring a WireGuard (NordLynx) interface in OPNsense using a NordVPN subscription, including steps to obtain necessary credentials and configure the connection.
 
@@ -8,6 +8,25 @@ Versions:
 *   OPNsense 25
 *   NordVPN Active Subscription (2026)
 
+- [OPNsense + NordVPN (WireGuard)](#opnsense--nordvpn-wireguard)
+  - [0. Introduction](#0-introduction)
+  - [1. Get NordVPN configuration](#1-get-nordvpn-configuration)
+    - [Step 1.1: Obtain your Private Key](#step-11-obtain-your-private-key)
+    - [Step 1.2: Obtain Server Data](#step-12-obtain-server-data)
+  - [2. WireGuard Configuration in OPNsense](#2-wireguard-configuration-in-opnsense)
+    - [Step 2.1: Configure your Connection (Instance)](#step-21-configure-your-connection-instance)
+    - [Step 2.2: Configure the Remote Server (Peer)](#step-22-configure-the-remote-server-peer)
+    - [Step 2.3: Link Peer to Instance](#step-23-link-peer-to-instance)
+    - [Step 2.4: Enable the Peer](#step-24-enable-the-peer)
+    - [Step 2.5: Verify Connection](#step-25-verify-connection)
+
+
+## 0. Introduction
+Neither NordVPN nor OPNsense provide an official unified guide for this configuration.
+
+- NordVPN offers WireGuard under the name "NordLynx," their custom implementation for enhanced speed and privacy. However, unlike other providers, they do not provide .conf configuration files nor display the Private Key in the user dashboard, which complicates manual configuration on third-party routers.
+
+- OPNsense has native WireGuard support but lacks a specific guide for NordVPN. Furthermore, the official WireGuard documentation is often outdated regarding recent user interface changes (such as the terminology shift to "Instances" and "Peers" in version 25.7).
 
 ## 1. Get NordVPN configuration
 
@@ -22,35 +41,30 @@ Navigate to "Access Tokens" and create a new one with permissions to "Get servic
 3.  [Access token](https://my.nordaccount.com/dashboard/nordvpn/access-tokens/) >
 4.  You will need to verify your email address.
 5.  Create a new token with the "Get service credentials" permission. Let's assume the generated token is `e9f2___X___66`.
-6.  The next step is to use that token to obtain your WireGuard Private Key.
+6.  The next step is to use that token to obtain your WireGuard Private Key. Run this command in your terminal (replace `YOUR_TOKEN_HERE` with your actual token):
 
 ```bash
-curl -s -u token:e9f2___X___66 https://api.nordvpn.com/v1/users/services/credentials | jq -r .nordlynx_private_key
-Vnn______________fMQ=
+curl -s -u token:YOUR_TOKEN_HERE https://api.nordvpn.com/v1/users/services/credentials | jq -r .nordlynx_private_key
 ```
+
+Let's say it returns: `Vnn______________fMQ=` for future reference.
 
 **Note:** You must have `jq` installed to process JSON. https://jqlang.org/download/
 
 The command above returns your WireGuard **Private Key**.
 
 
-### Step 1.2: Obtain Service Credentials
-
-Navigate to the **Manual Setup** section.
-1.  [NordAccount](https://my.nordaccount.com/dashboard/) >
-2.  [NordVPN](https://my.nordaccount.com/dashboard/nordvpn/) >
-3.  [Manual Setup](https://my.nordaccount.com/dashboard/nordvpn/manual-configuration/) >
-4.  [Tab "Service Credentials"](https://my.nordaccount.com/dashboard/nordvpn/manual-configuration/service-credentials/) >
-5.  "Verify your email" is required.
-6.  Copy your service **Username** and **Password** (long strings, not your email).
-
-
-### Step 1.3: Obtain Server Data
-Run this to obtain the IP and Public Key of the best server, in my case in Spain (ID 69):
+### Step 1.2: Obtain Server Data
+Run this to obtain the IP and Public Key of the best server, in my case in Spain (ID 202):
 
 ```bash
-curl -s "https://api.nordvpn.com/v1/servers/recommendations?filters\[country_id\]=202&limit=1" | jq -r '.[0] | {hostname: .hostname, ip: .station, public_key: (.technologies[] | select(.identifier=="wireguard_udp") | .metadata[] | select(.name=="public_key") | .value)}'
+curl -s "https://api.nordvpn.com/v1/servers/recommendations?filters\[country_id\]=202&limit=1" \
+  | jq -r '.[0] | {hostname: .hostname, ip: .station, public_key: (.technologies[] | select(.identifier=="wireguard_udp") | .metadata[] | select(.name=="public_key") | .value)}'
+```
 
+It returns something like this:
+
+```json
 {
   "hostname": "es225.nordvpn.com",
   "ip": "185.214.97.110",
@@ -81,8 +95,8 @@ Go to **VPN > WireGuard > Instances** and add a new one:
 Go to **VPN > WireGuard > Peers** and add a new one:
 
 *   **Name:** `NordVPN_ES_225` (In this case, I want to identify the Spain server 225).
-*   **Public Key:** The server's `public_key` obtained in step 1C (e.g., `OaSGa___________AXY=`).
-*   **Endpoint Address:** The numeric `ip` of the server obtained in step 1C (e.g., `185.214.9.110`).
+*   **Public Key:** The server's `public_key` obtained in step 1.2 (e.g., `OaSGa___________AXY=`).
+*   **Endpoint Address:** The numeric `ip` of the server obtained in step 1.2 (e.g., `185.214.9.110`).
 *   **Endpoint Port:** `51820`
 *   **Allowed IPs:** `0.0.0.0/0` (Allow all internet traffic).
 *   **Keepalive Interval:** `25` (Set persistent keepalive interval in seconds).
