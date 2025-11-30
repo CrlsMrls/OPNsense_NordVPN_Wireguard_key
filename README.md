@@ -2,8 +2,10 @@
 
 This document provides a comprehensive guide on configuring a WireGuard (NordLynx) interface in OPNsense using a NordVPN subscription, including steps to obtain necessary credentials and configure the connection.
 
+[Traducción en español](README_es.md)
+
 Versions:
-*   OPNsense 25.7.8-amd64
+*   OPNsense 25
 *   NordVPN Active Subscription (2026)
 
 
@@ -11,7 +13,7 @@ Versions:
 
 Before configuring OPNsense, you need to obtain your credentials and keys via a terminal.
 
-### A. Obtain your Private Key
+### Step 1.1: Obtain your Private Key
 For some reason, NordVPN hides this; it is possible they only want us to use their own applications.
 
 Navigate to "Access Tokens" and create a new one with permissions to "Get service credentials".
@@ -32,7 +34,7 @@ Vnn______________fMQ=
 The command above returns your WireGuard **Private Key**.
 
 
-### B. Obtain Service Credentials
+### Step 1.2: Obtain Service Credentials
 
 Navigate to the **Manual Setup** section.
 1.  [NordAccount](https://my.nordaccount.com/dashboard/) >
@@ -43,7 +45,7 @@ Navigate to the **Manual Setup** section.
 6.  Copy your service **Username** and **Password** (long strings, not your email).
 
 
-### C. Obtain Server Data
+### Step 1.3: Obtain Server Data
 Run this to obtain the IP and Public Key of the best server, in my case in Spain (ID 69):
 
 ```bash
@@ -65,7 +67,7 @@ To create a WireGuard connection, it is necessary to create an "Instance" (your 
 Go to **VPN > WireGuard > Instances** and add a new one:
 
 *   **Name:** `NordVPN_Local`
-*   **Private Key:** The key `Vnn______________fMQ=` that you obtained in step 1A.
+*   **Private Key:** The key `Vnn______________fMQ=` that you obtained in step 1.1.
 *   **Public Key:** Leave empty; it calculates automatically.
 *   **Listen Port:** `51820`
 *   **DNS Server:** `103.86.96.100` (NordVPN DNS).
@@ -103,7 +105,7 @@ Go to **VPN > WireGuard > Peers**:
 *   **Save**
 *   **Apply**
 
-### 2.5: Verify Connection
+### Step 2.5: Verify Connection
 Go to **VPN > WireGuard > Status**:
 
 It must show the interface and the peer active. Both with a green check ✅.
